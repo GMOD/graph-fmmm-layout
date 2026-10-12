@@ -1,6 +1,6 @@
 {
   "name": "@jbrowse/graph-fmmm-layout",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Bandage's force-directed graph layout: OGDF's fast multipole multilevel method compiled to a self-contained wasm module",
   "license": "GPL-3.0-or-later",
   "author": {
