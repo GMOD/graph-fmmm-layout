@@ -1,0 +1,8 @@
+node_modules
+esm/
+*.tsbuildinfo
+*.tgz
+.claude/
+.wasm-build/
+vendor/ogdf/build-wasm/
+vendor/ogdf/build-native/

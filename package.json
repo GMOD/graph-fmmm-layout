@@ -1,0 +1,67 @@
+{
+  "name": "@jbrowse/graph-fmmm-layout",
+  "version": "1.0.0",
+  "description": "Bandage's force-directed graph layout: OGDF's fast multipole multilevel method compiled to a self-contained wasm module",
+  "license": "GPL-3.0-or-later",
+  "author": {
+    "name": "Colin Diesh",
+    "email": "colin.diesh@gmail.com",
+    "url": "https://github.com/cmdcolin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GMOD/graph-fmmm-layout.git"
+  },
+  "keywords": [
+    "pangenome",
+    "graph",
+    "layout",
+    "bandage",
+    "ogdf",
+    "fmmm"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./esm/index.d.ts",
+        "default": "./esm/index.js"
+      }
+    }
+  },
+  "files": [
+    "esm"
+  ],
+  "scripts": {
+    "build": "rm -rf esm && tsc -p tsconfig.build.json && cp src/bandage-layout.js src/bandage-layout.d.ts esm/",
+    "build:wasm": "./scripts/build-wasm.sh",
+    "test:wasm": "node scripts/smoke-wasm.mjs",
+    "layout-digest": "node scripts/layout-digest.mjs",
+    "bench:layout": "node scripts/bench-layout.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "prepack": "pnpm build",
+    "preversion": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm test:wasm",
+    "postversion": "git push --follow-tags"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-plugin-import-x": "^4.17.1",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

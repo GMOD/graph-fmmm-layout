@@ -94,7 +94,7 @@ nothing. Diff the **drawing**, which is what every committed figure is a
 function of:
 
 ```console
-git show HEAD:src/bandage/bandage-layout.js > /tmp/old-engine.mjs
+git show HEAD:src/bandage-layout.js > /tmp/old-engine.mjs
 node scripts/layout-digest.mjs /tmp/old-engine.mjs > /tmp/before.txt
 pnpm build:wasm
 node scripts/layout-digest.mjs > /tmp/after.txt

@@ -16,9 +16,9 @@
 //
 //   ./gfa-layout-profile <file.gfa> <segment-cap|all> <quality> [minNodeLength]
 
-#include "../../src/bandage/native/include/graph.h"
-#include "../../src/bandage/native/include/graphlayout.h"
-#include "../../src/bandage/native/include/settings.h"
+#include "../../native/include/graph.h"
+#include "../../native/include/graphlayout.h"
+#include "../../native/include/settings.h"
 
 #include <chrono>
 #include <cstdio>
