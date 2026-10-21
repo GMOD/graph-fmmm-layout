@@ -2,7 +2,7 @@ Make OGDF elderberry-202309 build for wasm32-unknown-emscripten.
 
 **Already applied to `vendor/ogdf`.** The build does not run this; it is the
 record of how that tree differs from the upstream tag, and what to reapply when
-bumping to a newer one. See vendor/README.md.
+bumping to a newer one. See native/README.md.
 
 1. `-march=native` is fatal, not merely useless. OGDF adds it for any compiler
    identifying as GNU or Clang, and emcc identifies as Clang, so a stock

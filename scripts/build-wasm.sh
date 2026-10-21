@@ -2,7 +2,7 @@
 # Rebuilds src/bandage-layout.js from native.
 #
 # Everything it needs is in this repo except the Emscripten SDK. OGDF is
-# vendored at vendor/ogdf (see vendor/README.md for the tag and the patch), so
+# vendored at vendor/ogdf (see native/README.md for the tag and the patch), so
 # there is no checkout to find, no network, and no version to get wrong.
 #
 # It used to want a BandageNG checkout at a hard-coded path under $HOME, which
@@ -42,7 +42,7 @@ fi
 
 if [ ! -f "$OGDF_DIR/CMakeLists.txt" ]; then
     echo "ERROR: no OGDF sources at $OGDF_DIR" >&2
-    echo "vendor/ogdf is committed; see vendor/README.md if it is missing." >&2
+    echo "vendor/ogdf is committed; see native/README.md if it is missing." >&2
     exit 1
 fi
 
