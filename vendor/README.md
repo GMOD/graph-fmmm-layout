@@ -1,57 +1,41 @@
 # Vendored third-party sources
 
-## `ogdf/` — OGDF `elderberry-202309`, patched
+## `ogdf/`: OGDF `elderberry-202309`, patched
 
-The graph layout library behind the force-directed drawing. `native/`
-is a port of Bandage's FMMM layout, and FMMM is OGDF's; `scripts/build-wasm.sh`
-compiles this tree to `libOGDF.a` with Emscripten and links the engine against
-it.
+`native/` is a port of Bandage's FMMM layout, and FMMM is part of OGDF.
+`scripts/build-wasm.sh` compiles this tree to `libOGDF.a` with Emscripten and
+links the engine against it.
 
-Upstream is <https://github.com/ogdf/ogdf> at tag `elderberry-202309`, plus
-`ogdf-emscripten.patch` beside this file, which is already applied here.
+- Upstream is <https://github.com/ogdf/ogdf> at tag `elderberry-202309`, with
+  `ogdf-emscripten.patch` beside this file already applied
+- With OGDF vendored, `pnpm build:wasm` needs only this repo and the Emscripten
+  SDK, downloads nothing, and builds against a known OGDF version. The tree
+  takes 26 MB on disk and about 4 MB in a clone
+- `pnpm build` needs none of this tree, because it copies the committed engine
+  at `src/bandage-layout.js`
+- `package.json` publishes only `esm/`, so this directory is not in the npm
+  tarball
 
-### Why it is vendored rather than fetched
+## The patch
 
-This used to be a hard-coded path into a BandageNG checkout under `$HOME`. A
-fresh clone of this repo therefore could not rebuild its own engine, and what it
-did build depended on whatever state that unrelated tree happened to be in — for
-a **committed artifact that every published force-directed figure is a function
-of**, that is the wrong kind of dependency to have.
-
-Fetching at a pinned tag was the intermediate step and is also gone. Nothing is
-downloaded during a build, so the engine can be regenerated offline, at a known
-version, forever.
-
-It costs 26 MB on disk and about 4 MB in a clone. That buys `pnpm build:wasm`
-working from nothing but this repo and the Emscripten SDK. Note that `pnpm
-build` — the ordinary one — needs none of it: the engine is committed at
-`src/bandage-layout.js` and this tree is only an input to regenerating
-that.
-
-### The patch is required, not a preference
-
-A stock `elderberry-202309` does not build for wasm **at all**. OGDF adds
-`-march=native` for any compiler identifying as GNU *or Clang*, and emcc is
-Clang:
+A stock `elderberry-202309` does not build for wasm. OGDF adds `-march=native`
+for any compiler that identifies as GNU or Clang, and emcc is Clang:
 
 ```
 clang++: error: unsupported option '-march=' for target 'wasm32-unknown-emscripten'
 ```
 
-Dropping Clang from that guard is also the right call for a committed artifact
-independently of whether the flag is accepted, since `native` means "whatever
-CPU ran the build" — the opposite of a reproducible engine. The second hunk adds
-a `<chrono>` include that newer libc++ no longer provides transitively.
+- Hunk 1 drops Clang from that guard. A committed artifact needs it dropped
+  anyway, because `-march=native` targets whichever CPU ran the build
+- Hunk 2 adds a `<chrono>` include that newer libc++ no longer provides
+  transitively
 
-Both hunks match what BandageNG carries in its own vendored OGDF. That is
-deliberate: it is what the engine had been built against since it was ported, so
-it is what every committed figure was drawn with. **Verified** rather than
-assumed — building upstream `elderberry-202309` plus this patch reproduced all
-90 cases of `scripts/layout-digest.mjs` with byte-identical coordinates against
-the artifact built from BandageNG's tree, which is what established that these
-two hunks are the whole of the delta that mattered.
+BandageNG's vendored OGDF has the same two hunks. Upstream `elderberry-202309`
+plus this patch reproduced all 90 cases of `scripts/layout-digest.mjs` with
+byte-identical coordinates against the artifact built from BandageNG's tree, so
+the two hunks are the whole difference that affects the layout.
 
-### Re-syncing to a newer OGDF
+## Re-syncing to a newer OGDF
 
 ```console
 git clone --depth 1 --branch <newtag> https://github.com/ogdf/ogdf.git /tmp/ogdf
@@ -60,17 +44,12 @@ rm -rf /tmp/ogdf/.git && rm -rf vendor/ogdf && mv /tmp/ogdf vendor/ogdf
 pnpm build:wasm
 ```
 
-Then diff the drawing, not the artifact — `native/README.md` has the
-`layout-digest.mjs` recipe. **Expect it to move.** A different OGDF is a
-different FMMM, and every force-directed figure will need regenerating; that is
-the cost of the bump, and it should be a deliberate commit of its own rather
-than a side effect of one.
+Then diff the drawing with the `layout-digest.mjs` recipe in
+[`native/README.md`](../native/README.md#verifying-a-rebuild). A different OGDF
+has a different FMMM, so expect every force-directed figure to move and need
+regenerating. Commit the bump on its own.
 
-### Licensing
+## License
 
-OGDF is GPL (`ogdf/LICENSE_GPL_v2.txt`, `ogdf/LICENSE_GPL_v3.txt`), which is why
-this plugin is GPL-3.0-or-later — see the repo README. Vendoring the sources
-changes nothing about that: it was already linked in.
-
-`package.json` publishes only `dist` and `src`, so this directory is not in the
-npm tarball.
+OGDF is GPL (`ogdf/LICENSE_GPL_v2.txt`, `ogdf/LICENSE_GPL_v3.txt`), so this
+package is GPL-3.0-or-later.
