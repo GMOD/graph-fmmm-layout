@@ -1,97 +1,92 @@
 # Bandage layout engine
 
-`native/` is the C++ port of Bandage's FMMM layout (OGDF), ~1,100 lines: the
-graph model, the OGDF wiring, and the Emscripten bindings. It lives here rather
-than in a BandageNG checkout so a change to the layout is a reviewable diff in
-this repo, beside the figures it moves.
+`native/` holds the C++ port of Bandage's FMMM layout (OGDF), about 900 lines:
+the graph model, the OGDF wiring and the Emscripten bindings. We keep it in this
+repo rather than a BandageNG checkout so that a change to the layout is a
+reviewable diff here. Upstream is https://github.com/cmdcolin/BandageNG-web
+(`bandage-layout-js/`).
 
-`bandage-layout.js` is the generated artifact — an Emscripten build of `native/`
-compiled with `-sSINGLE_FILE=1`, so the wasm is embedded as base64 and the file
-is a self-contained ES module with no imports. That is what lets `esbuild` leave
-it alone and a consumer load it as a lazy chunk at runtime.
+## Rebuilding `src/bandage-layout.js`
 
-Regenerate with `pnpm build:wasm` (`scripts/build-wasm.sh`). The Emscripten SDK
-is the only thing you have to install: OGDF is **vendored** at `vendor/ogdf`
-(elderberry-202309, patched — see [`vendor/README.md`](../../vendor/README.md)),
-so there is no checkout to find, no network, and no version to get wrong. About
-four minutes from nothing on 16 cores, seconds once `libOGDF.a` exists.
+`pnpm build:wasm` (`scripts/build-wasm.sh`) compiles `native/` with
+`-sSINGLE_FILE=1`, which embeds the wasm as base64. The output,
+`src/bandage-layout.js`, is a self-contained ES module with no imports, so
+esbuild leaves it alone and a consumer can load it as a lazy chunk.
 
-`OGDF_DIR` still points it elsewhere if you are testing an upstream bump.
+- The Emscripten SDK is the only install. OGDF is vendored at `vendor/ogdf`
+  (`elderberry-202309`, patched; see [`vendor/README.md`](../vendor/README.md)),
+  so the build needs no network
+- A build from scratch takes about four minutes on 16 cores, and seconds once
+  `libOGDF.a` exists. The script rebuilds `libOGDF.a` only when it is missing or
+  its compiler flags changed
+- `OGDF_DIR` points the script at another OGDF tree, for testing an upstream
+  bump
+- On 2026-08-13, rebuilding OGDF under emcc 6.0.6 in place of a `libOGDF.a` from
+  October 2025 moved no coordinate in any of the 90 cases of
+  `scripts/layout-digest.mjs`. Run the digest to check again
 
-### OGDF's own age is not a suspect
+## `pnpm test:wasm`
 
-The script reuses `libOGDF.a` whenever one is there, so the OGDF an artifact was
-linked against can be much older than the Emscripten that linked it. Measured
-rather than assumed: rebuilding OGDF from scratch under emcc 6.0.6, against a
-`libOGDF.a` built by whatever was current in October 2025, moved **no coordinate
-in any of the 90 digest cases** (2026-08-13). Reach for `layout-digest.mjs`
-below to establish that again rather than trusting this line.
+`scripts/smoke-wasm.mjs` loads the committed artifact and lays out small graphs.
+It checks that:
 
-`pnpm test:wasm` runs the committed artifact for real. Three things it guards:
-the file is minified glue that any reformatter (eslint --fix, prettier) will
-silently corrupt; **the layout is deterministic** — FMMM used to seed its
-initial placement from `clock()`, which moved ~2% of the pixels in every
-force-directed screenshot between regens, and the seed is now fixed
-(`LayoutSettings::randomSeed`) and overridable per call with a `seed` option;
-and the linear layout draws a graph whose **segment names are not integers**.
+- The file runs, since a reformatter such as `eslint --fix` or prettier corrupts
+  its minified glue
+- The layout is deterministic, with the seed fixed at
+  `LayoutSettings::randomSeed` and overridable per call by the `seed` option.
+  Upstream FMMM seeded its initial placement from `clock()`, which moved about
+  2% of the pixels in every force-directed screenshot between regens
+- The linear layout draws a graph whose segment names are not integers, such as
+  a minigraph rGFA's `s1`. `determineLinearNodePositions` is the only code that
+  reads a segment's name, and only `linearLayout` reaches it. See
+  `parseWholeInt` in `native/include/types.h`
 
-A node may also carry an `x`/`y`. The engine reads it as where that node's chain
-starts (`addToOgdfGraph`) and switches FMMM to `KeepPositions`, so a
-reference-anchored graph can hand it the backbone laid along x and the alleles
-under their anchors (`layout/referenceSeeds.ts`). Send `rotateComponents: false`
-with them: FMMM otherwise turns each component to the angle of least area, and
-packing may tip it a further 90 degrees, which would throw away the orientation
-the seeds stated. Off, the components are still packed, just not turned. A graph
-with no seeds and the option absent draws exactly as before, which
-`layout-digest.mjs` checks; its `seeded` rows cover the new path.
+## Seeds and strands
 
-That last one is narrow on purpose. `determineLinearNodePositions` is the only
-code that reads a segment's name and the only code reached by `linearLayout`,
-and the smoke graph's segments were called `1`..`6`, so it never exercised the
-branch a minigraph rGFA takes. See `parseWholeInt` in `native/include/types.h`
-for what was hiding there.
+The engine reads a node's `x`/`y` as where its chain starts (`addToOgdfGraph`)
+and switches FMMM to `KeepPositions`. bandage-core's `layout/referenceSeeds.ts`
+uses this to lay a reference backbone along x with the alleles under their
+anchors. Send `rotateComponents: false` with seeds, because FMMM otherwise turns
+each component to the angle of least area and packing may tip it a further 90
+degrees. With the option off, FMMM still packs the components. In
+`layout-digest.mjs`, the `seeded` rows pass seeds with
+`rotateComponents: false`, and the other rows pass neither.
 
 An edge's `fromStrand`/`toStrand` pick the ends it joins. The graph holds one
-node per segment, so `L a + b -` reaches the END of `b+`; the engine reads a
-strand against the node id's own suffix, and an absent strand joins end to start
-as before. `mergeRuns` counts links per side for the same reason.
+node per segment, so `L a + b -` reaches the end of `b+`. The engine reads a
+strand against the `+` or `-` that ends the node id, and an edge with no strand
+joins the end of `from` to the start of `to`. bandage-core's `mergeRuns` counts
+links per side for the same reason.
 
-## Nothing in native/ may throw
+## No code in `native/` may throw
 
-Emscripten builds with exception catching off by default, so `throw` is not
-caught, it is `abort()` — including a `throw` from inside a `try` with a
-`catch (...)` right there, because the handler is compiled away. A `std::stoi`
-wrapped in exactly that shape read as careful and took the module down on every
-graph whose segments were named `s1`.
+Emscripten builds with exception catching off by default, so a `throw` calls
+`abort()`, even inside a `try` with a `catch (...)`, because the compiler
+removes the handler. A `std::stoi` wrapped in that `try` aborted the module on
+every graph whose segments were named `s1`.
 
-An abort is not contained either. The call that aborts leaks whatever it had
-allocated, so repeated ones exhaust the heap, and `loadBandage()` caches one
-module per worker — measured, about twenty aborted calls and every _later_
-layout fails with "memory access out of bounds" until the tab is reloaded. That
-is why ownership here is `std::unique_ptr` rather than a matched `new`/`delete`:
-not tidiness, but bounding what a future throw can cost.
+An aborted call leaks what it allocated, and bandage-core's `loadBandage()`
+caches one module per worker. After about twenty aborted calls, every later
+layout fails with "memory access out of bounds" until the tab is reloaded. The
+code owns its allocations through `std::unique_ptr` rather than matched
+`new`/`delete`, so a future throw leaks less.
 
-## emcc is a lenient judge of includes
+## Include every header a file uses
 
-`settings.h` called `ceil()` for years without including `<cmath>`. It compiled
-because emcc's libc++ pulls the header in transitively; libstdc++ does not, and
-the file was only ever compiled by emcc, so nothing said so. It surfaced when
-`scripts/profile/` compiled the identical sources with g++ and both translation
-units failed on that one line.
+emcc's libc++ includes `<cmath>` transitively, and libstdc++ does not.
+`settings.h` called `ceil()` without `<cmath>` and compiled under emcc, until
+`scripts/profile/` compiled the same sources with g++. The vendored OGDF needed
+the same fix for `<chrono>` (hunk 2 of `vendor/ogdf-emscripten.patch`). To check
+in seconds, with no native OGDF:
 
-The vendored OGDF needed the same fix for `<chrono>` (hunk 2 of
-`vendor/ogdf-emscripten.patch`), so this is a pattern rather than a one-off, and
-a header that is not self-contained is a latent break in any future toolchain
-bump. `g++ -fsyntax-only -Ivendor/ogdf/include -Ivendor/ogdf/build-wasm/include`
-over `src/graphlayout.cpp` is a seconds-long check for it that needs no native
-OGDF.
+```console
+g++ -fsyntax-only -Ivendor/ogdf/include -Ivendor/ogdf/build-wasm/include native/src/graphlayout.cpp
+```
 
 ## Verifying a rebuild
 
-The artifact's bytes move for reasons that have nothing to do with the layout —
-a different Emscripten, a different build host — so diffing the file says
-nothing. Diff the **drawing**, which is what every committed figure is a
-function of:
+A different Emscripten or build host changes the artifact's bytes without
+changing the layout, so compare the drawing instead:
 
 ```console
 git show HEAD:src/bandage-layout.js > /tmp/old-engine.mjs
@@ -101,26 +96,13 @@ node scripts/layout-digest.mjs > /tmp/after.txt
 diff /tmp/before.txt /tmp/after.txt
 ```
 
-That hashes full-precision coordinates over five graph shapes against every
-option the view sends. Expect an empty diff for a change that was not meant to
-move anything; every line that does change is a figure that will need
-regenerating, and should be one you can name in advance.
-
-`.github/workflows/wasm-rebuild.yml` runs exactly this weekly, and puts the diff
-in the job summary. So the question it answers is not "did the bytes change" but
-"does the committed engine still draw what its sources say it draws". It needs
-no checkout but this one now that OGDF is vendored, and no `pnpm install`: both
-scripts run on bare node.
-
-**On one host with one Emscripten the build is byte-reproducible**, which this
-file previously denied — it claimed Emscripten embeds the build path. It does
-not: the `<cmath>` regen (2026-08-13) was run from a worktree, i.e. a different
-absolute path to every source, and `git status` came back clean against an
-artifact built in the primary checkout. So for a change that is meant to be a
-no-op, an unmodified `bandage-layout.js` is the strongest confirmation available
-and comes for free; the digest is what you need when it _does_ differ, and
-across Emscripten versions, where the bytes genuinely do move.
-
-Upstream: https://github.com/cmdcolin/BandageNG-web (`bandage-layout-js/`)
-
-Both Bandage and OGDF are GPL, which is why this package is GPL-3.0-or-later.
+- `layout-digest.mjs` hashes full-precision coordinates over five graph shapes
+  and every option the view sends. A change meant to move nothing gives an empty
+  diff, and each changed line is a figure to regenerate
+- `.github/workflows/wasm-rebuild.yml` runs this every Monday and writes the
+  diff to the job summary. Both scripts run on bare node, with no `pnpm install`
+- On one host with one Emscripten, the build is byte-reproducible: Emscripten
+  does not embed the build path. A regen from a worktree on 2026-08-13 left
+  `git status` clean against an artifact built in the primary checkout. An
+  unchanged `bandage-layout.js` therefore confirms a no-op change, and the
+  digest covers a change that moves bytes and a bump of Emscripten
