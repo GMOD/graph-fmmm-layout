@@ -1,14 +1,15 @@
 # @jbrowse/graph-fmmm-layout
 
-- **In:** a sequence graph (nodes with a length in bp, links between them), with
-  optional start positions per node
-- **Out:** a polyline per node, laid out by Bandage's force-directed engine
+`fmmmLayout` lays out a sequence graph with Bandage's port of OGDF's fast
+multipole multilevel method (FMMM). The engine is compiled to wasm and inlined
+into one ES module with no imports (`src/bandage-layout.js`), which `fmmmLayout`
+loads on its first call.
 
-OGDF's fast multipole multilevel method (FMMM) in Bandage's port, compiled to
-wasm and inlined into one ES module with no imports. The module loads on the
-first call.
+## Usage
 
-## Example
+```bash
+npm install @jbrowse/graph-fmmm-layout
+```
 
 ```ts
 import { fmmmLayout } from '@jbrowse/graph-fmmm-layout'
@@ -36,15 +37,21 @@ const { nodePositions } = await fmmmLayout({
 })
 ```
 
-## Notes
-
-- The layout is deterministic. `options.seed` overrides the fixed default.
-- A node with `x`/`y` starts there and switches FMMM to keep positions. Pass
-  `rotateComponents: false` with seeds.
+- Each node has a `length` in bp, and `nodePositions` holds a polyline of
+  `{ x, y }` points per node id
+- An edge leaves the end of `from` and enters the start of `to`. `fromStrand`
+  and `toStrand` (`'+'` or `'-'`) pick the other end when they disagree with the
+  `+` or `-` that ends the node id
+- `options` also takes `linearLayout`, `aspectRatio`, `componentSeparation`,
+  `rotateComponents` and `seed`. The layout is deterministic, and `seed`
+  replaces the fixed default
+- A node with `x`/`y` starts there, and the engine switches FMMM to keep
+  positions. Pass `rotateComponents: false` with seeds
 - `pnpm build:wasm` rebuilds the committed `src/bandage-layout.js` from
-  `native/` and the vendored OGDF; it needs only the Emscripten SDK. See
-  [`native/README.md`](native/README.md).
-- GPL-3.0-or-later, because Bandage and OGDF are GPL.
+  `native/` and the vendored OGDF, and needs only the Emscripten SDK. See
+  [`native/README.md`](native/README.md)
+
+The license is GPL-3.0-or-later, because Bandage and OGDF are GPL.
 
 ## See also
 
