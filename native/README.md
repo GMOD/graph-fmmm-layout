@@ -32,7 +32,7 @@ esbuild leaves it alone and a consumer can load it as a lazy chunk.
 `scripts/smoke-wasm.mjs` loads the committed artifact and lays out small graphs.
 It checks that:
 
-- The file runs, since a reformatter such as `eslint --fix` or prettier corrupts
+- The file runs, since a reformatter such as `oxlint --fix` or oxfmt corrupts
   its minified glue
 - The layout is deterministic, with the seed fixed at
   `LayoutSettings::randomSeed` and overridable per call by the `seed` option.

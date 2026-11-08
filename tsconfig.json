@@ -14,8 +14,9 @@
     "noUncheckedIndexedAccess": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vitest/globals", "node"]
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/bandage-layout.js"]
+  "exclude": ["src/bandage-layout.js"]
 }

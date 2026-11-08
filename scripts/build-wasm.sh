@@ -18,7 +18,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NATIVE_DIR="$ROOT/native"
 # Out of src/, because CMake writes a compiler_depend.ts into its build tree and
-# tsc and eslint would both try to parse it.
+# tsc and oxlint would both try to parse it.
 BUILD_DIR="$ROOT/.wasm-build"
 DEST="$ROOT/src/bandage-layout.js"
 OGDF_DIR="${OGDF_DIR:-$ROOT/vendor/ogdf}"

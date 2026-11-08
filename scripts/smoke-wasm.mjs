@@ -1,7 +1,7 @@
 // Loads the committed Bandage engine and lays out a small bubble graph.
 //
 // The artifact is 425kb of minified glue with the wasm inlined as base64, so
-// any tool that "helpfully" reformats it (eslint --fix, prettier) corrupts it
+// any tool that "helpfully" reformats it (oxlint --fix, oxfmt) corrupts it
 // in a way nothing else notices until the layout is requested at runtime. This
 // runs it for real, needs no toolchain, and needs none of the JBrowse deps.
 
