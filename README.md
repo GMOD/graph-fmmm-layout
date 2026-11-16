@@ -50,6 +50,9 @@ const { nodePositions } = await fmmmLayout({
 - `pnpm build:wasm` rebuilds the committed `src/bandage-layout.js` from
   `native/` and the vendored OGDF, and needs only the Emscripten SDK. See
   [`native/README.md`](native/README.md)
+- [Differences from BandageNG](native/README.md#differences-from-bandageng)
+  lists where the engine departs from BandageNG's layout, such as the fixed
+  seed, one node per id and the effect of input order
 
 The license is GPL-3.0-or-later, because Bandage and OGDF are GPL.
 
