@@ -54,6 +54,8 @@ const { nodePositions } = await fmmmLayout({
   lists where the engine departs from BandageNG's layout, such as the fixed
   seed, one node per id and the effect of input order
 
+## License
+
 The license is GPL-3.0-or-later, because Bandage and OGDF are GPL.
 
 ## See also
