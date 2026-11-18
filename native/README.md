@@ -157,7 +157,11 @@ diff /tmp/before.txt /tmp/after.txt
 The engine reads a node's `x`/`y` as where its chain starts (`addToOgdfGraph`)
 and switches FMMM to `KeepPositions`. bandage-core's `layout/referenceSeeds.ts`
 uses this to lay a reference backbone along x with the alleles under their
-anchors.
+anchors. Its `layout/archSeeds.ts` then lifts a reference stretch that two links
+join to the reference beside it by like ends, as at an inversion, onto a shallow
+arch, so FMMM does not start that stretch's loop lying across the reference.
+BandageNG seeds nothing, so where these seeds apply its picture differs from
+ours.
 
 - Send `rotateComponents: false` with seeds, because FMMM otherwise turns each
   component to the angle of least area and packing may tip it a further 90
