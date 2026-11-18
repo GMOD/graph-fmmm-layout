@@ -79,19 +79,22 @@ here.
 ### Defaults
 
 BandageNG's defaults come from `program/settings.cpp`. bandage-core passes its
-own value for every setting here but `aspectRatio`, and derives
-`nodeLengthPerMegabase` with the same auto rule as BandageNG
-(`layout/drawnScale.ts`).
+own value for every setting here but `aspectRatio` (`engineRequest` in
+`pipeline.ts`). With its defaults, that matches BandageNG except for
+`componentSeparation`, and it derives `nodeLengthPerMegabase` with the same auto
+rule as BandageNG (`layout/drawnScale.ts`). Its other `bubbleSpread` values,
+which a caller must ask for, replace that rule with a power law, so drawn node
+length is no longer proportional to bp.
 
-| Setting                 | BandageNG                                           | here     |
-| ----------------------- | --------------------------------------------------- | -------- |
-| `quality`               | 2                                                   | 1        |
-| `nodeLengthPerMegabase` | auto: mean drawn node length 40, total at least 500 | 1000     |
-| `minimumNodeLength`     | 5                                                   | 1        |
-| `edgeLength`            | 5                                                   | 1        |
-| `nodeSegmentLength`     | 20                                                  | 1        |
-| `componentSeparation`   | 50                                                  | 15       |
-| `aspectRatio`           | the view's width / height (GUI), 1.333333 (CLI)     | 1.333333 |
+| Setting                 | BandageNG                                           | here     | bandage-core             |
+| ----------------------- | --------------------------------------------------- | -------- | ------------------------ |
+| `quality`               | 2                                                   | 1        | 2                        |
+| `nodeLengthPerMegabase` | auto: mean drawn node length 40, total at least 500 | 1000     | BandageNG's auto         |
+| `minimumNodeLength`     | 5                                                   | 1        | 5                        |
+| `edgeLength`            | 5                                                   | 1        | 5 × `spacing`, default 1 |
+| `nodeSegmentLength`     | 20                                                  | 1        | 20                       |
+| `componentSeparation`   | 50                                                  | 15       | 15                       |
+| `aspectRatio`           | the view's width / height (GUI), 1.333333 (CLI)     | 1.333333 | not sent: 1.333333       |
 
 ## Rebuilding `src/bandage-layout.js`
 
