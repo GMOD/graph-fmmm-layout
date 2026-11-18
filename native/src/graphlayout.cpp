@@ -187,11 +187,11 @@ static void determineLinearNodePositions(Graph& ogdfGraph,
     double lastXPos = 0.0;
 
     for (const auto& [key, node] : keyed) {
-        std::vector<DeBruijnNode*> upstreamNodes = node->getUpstreamNodes();
-        for (size_t j = 0; j < upstreamNodes.size(); ++j) {
-            DeBruijnNode* upstreamNode = upstreamNodes[j];
+        std::vector<NodeEnd> upstreamEnds = node->getUpstreamEnds();
+        for (size_t j = 0; j < upstreamEnds.size(); ++j) {
+            auto [upstreamNode, atEnd] = upstreamEnds[j];
             auto it = layoutMap.find(upstreamNode);
-            if (it == layoutMap.end())
+            if (!atEnd || it == layoutMap.end())
                 continue;
 
             ogdf::node upstreamEnd = it->second.back();

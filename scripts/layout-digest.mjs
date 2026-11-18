@@ -98,6 +98,35 @@ function awkward() {
   }
 }
 
+// A numbered backbone with a forward and an inverted allele per bubble. Every
+// other bubble writes a forward link from the other strand, start to end.
+function inversions(nBubbles, seed) {
+  const rand = lcg(seed)
+  const nodes = []
+  const edges = []
+  const add = n => {
+    const id = `${n}+`
+    nodes.push({ id, name: id, length: 100 + Math.floor(rand() * 4000) })
+    return id
+  }
+  let prev = add(1)
+  for (let i = 0; i < nBubbles; i++) {
+    const forward = add(3 * i + 2)
+    const inverted = add(3 * i + 3)
+    const next = add(3 * i + 4)
+    edges.push(
+      { from: prev, to: forward },
+      i % 2
+        ? { from: next, fromStrand: '-', to: forward, toStrand: '-' }
+        : { from: forward, to: next },
+      { from: prev, to: inverted, toStrand: '-' },
+      { from: inverted, fromStrand: '-', to: next },
+    )
+    prev = next
+  }
+  return { nodes, edges }
+}
+
 // What the view sends for a reference-anchored graph (referenceSeeds.ts):
 // the backbone end to end along x at drawn length, each allele at the midpoint
 // of the backbone node before it, one lane down. `b<i>+` is the backbone in
@@ -165,6 +194,7 @@ const GRAPHS = [
   ['bubbleChain(200)', bubbleChain(200, 13)],
   ['fragmented(300,25)', fragmented(300, 25)],
   ['awkward', awkward()],
+  ['inversions(12)', inversions(12, 17)],
 ]
 const SPREADS = [
   ['proportional', 0],
@@ -233,6 +263,31 @@ for (const [graphName, graph] of GRAPHS) {
         rotateComponents: false,
         ...scale,
       })
+    }
+  }
+}
+
+// Input order moves the layout (native/README.md, "Order"), so the same graphs
+// with their nodes or their edges reversed get rows of their own, at the
+// proportional spread
+const REORDERS = [
+  ['rev nodes', graph => ({ ...graph, nodes: graph.nodes.toReversed() })],
+  ['rev edges', graph => ({ ...graph, edges: graph.edges.toReversed() })],
+]
+const REORDERED = new Set(['bubbleChain(8)', 'inversions(12)'])
+for (const [graphName, graph] of GRAPHS.filter(([name]) =>
+  REORDERED.has(name),
+)) {
+  const scale = bandageAutoScale(graph, 0)
+  for (const [orderName, reorder] of REORDERS) {
+    for (const linearLayout of [false, true]) {
+      const head = [
+        graphName.padEnd(19),
+        orderName.padEnd(13),
+        'q2',
+        linearLayout ? 'linear' : 'force ',
+      ].join(' ')
+      await report(head, reorder(graph), { quality: 2, linearLayout, ...scale })
     }
   }
 }

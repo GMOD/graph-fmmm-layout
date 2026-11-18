@@ -35,24 +35,24 @@ here.
   node that was not laid out attaches to its reverse complement's other end. We
   hold one node per id the caller sends and return points only for those ids. An
   edge's `fromStrand`/`toStrand` pick the end instead (`leavesStart` and
-  `entersEnd` in `graph.h`). An id that does not end in `+` or `-` ignores the
-  strands. See [Seeds and strands](#seeds-and-strands)
+  `entersEnd` in `graph.h`). The linear layout reads them too, and starts a node
+  to the right of the nodes whose end joins its start, which are the upstream
+  nodes of `N+` that BandageNG lays out. An id that does not end in `+` or `-`
+  ignores the strands. See [Seeds and strands](#seeds-and-strands)
 - **Linear layout sort.** BandageNG sorts numerically only when every name is a
   number; one non-numeric name sorts the whole graph alphabetically,
   case-insensitively and locale-aware, so `10` lands before `9`. We sort the
   numeric names numerically first, then the rest by byte order (case-sensitive),
   with a stable sort. Both strip the last character of the id before sorting,
   even from an id with no sign
-- **Linear layout upstream nodes.** Each node starts to the right of its
-  upstream nodes' last points. BandageNG's nodes are stranded, so every edge
-  into a node leaves its source's end and enters the node's start. Ours counts
-  every edge that ends at the node, and takes the source's last point, even when
-  `entersEnd` or `leavesStart` says the edge joins the other end
 - **Order.** We build the OGDF graph and return nodes in input order, and the
   order moves the layout: the same graph with its nodes or its edges reversed
-  lays out differently. bandage-core sorts edges for this
-  (`canonicalEdgeOrder`). BandageNG builds from a hat-trie of nodes and a hash
-  set of edge pointers, and returns nodes in hash-map order
+  lays out differently. The linear layout sorts the nodes, so only its edge
+  order counts, unless two ids differ only in their last character. bandage-core
+  sorts edges for this (`canonicalEdgeOrder`). BandageNG builds from a hat-trie
+  of nodes and a hash set of edge pointers, and returns nodes in hash-map order.
+  `src/fmmmLayout.test.ts` and the `rev nodes` and `rev edges` rows of
+  `scripts/layout-digest.mjs` pin this
 
 ### Added
 
@@ -144,7 +144,7 @@ node scripts/layout-digest.mjs > /tmp/after.txt
 diff /tmp/before.txt /tmp/after.txt
 ```
 
-- `layout-digest.mjs` hashes full-precision coordinates over five graph shapes
+- `layout-digest.mjs` hashes full-precision coordinates over six graph shapes
   and every option the view sends. A change meant to move nothing gives an empty
   diff, and each changed line is a figure to regenerate
 - `.github/workflows/wasm-rebuild.yml` runs this every Monday and writes the

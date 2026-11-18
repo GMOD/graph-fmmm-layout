@@ -17,6 +17,11 @@
 
 class DeBruijnNode;
 
+struct NodeEnd {
+    DeBruijnNode* node;
+    bool atEnd;
+};
+
 class DeBruijnEdge {
 public:
     DeBruijnNode* startingNode;
@@ -65,11 +70,14 @@ public:
         seedY = y;
     }
 
-    std::vector<DeBruijnNode*> getUpstreamNodes() const {
-        std::vector<DeBruijnNode*> result;
+    std::vector<NodeEnd> getUpstreamEnds() const {
+        std::vector<NodeEnd> result;
         for (auto* edge : edges) {
-            if (edge->getEndingNode() == this) {
-                result.push_back(edge->getStartingNode());
+            if (edge->getEndingNode() == this && !edge->entersEnd) {
+                result.push_back({edge->getStartingNode(), !edge->leavesStart});
+            }
+            if (edge->getStartingNode() == this && edge->leavesStart) {
+                result.push_back({edge->getEndingNode(), edge->entersEnd});
             }
         }
         return result;
